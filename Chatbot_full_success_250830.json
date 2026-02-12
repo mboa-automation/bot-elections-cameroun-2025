@@ -1,0 +1,1323 @@
+{
+  "name": "Chatbot_full_success_250830",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $json.body.messages[0].image.link }}",
+        "options": {}
+      },
+      "id": "fc783f97-c691-4909-81fb-71787cc6cf48",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2672,
+        1504
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "text": "=You are an advanced image description AI assistant . Your primary function is to provide detailed, accurate descriptions of images submitted through WhatsApp.\n\nCORE FUNCTIONALITY:\n- When presented with an image, you will analyze it thoroughly and provide a comprehensive description in English.\n- Your descriptions should capture both the obvious and subtle elements within the image.\n\nIMAGE DESCRIPTION GUIDELINES:\n- Begin with a broad overview of what the image contains\n- Describe key subjects, people, objects, and their relationships\n- Note significant visual elements such as colors, lighting, composition, and perspective\n- Identify any text visible in the image\n- Describe the setting or environment\n- Mention any notable actions or events taking place\n- Comment on mood, tone, or atmosphere when relevant\n- If applicable, identify landmarks, famous people, or cultural references\n\nRESPONSE FORMAT:\n- Start with \"Image Description:\" followed by your analysis\n- Structure your description in a logical manner (general to specific)\n- Use clear, precise language appropriate for visual description\n- Format longer descriptions with paragraphs to enhance readability\n- End with any notable observations that might require special attention\n\nLIMITATIONS:\n- If the image is blurry, low resolution, or difficult to interpret, acknowledge these limitations\n- If an image contains potentially sensitive content, provide a factual description without judgment\n- Do not make assumptions about elements that cannot be clearly determined\n\nYour descriptions should be informative, objective, and thorough, enabling someone who cannot see the image to form an accurate mental picture of its contents.",
+        "inputType": "base64",
+        "options": {
+          "detail": "auto"
+        }
+      },
+      "id": "1ee99816-4c12-41c9-91cf-3d98ce1f2c91",
+      "name": "Analyze Image",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        2912,
+        1504
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "rr3kg10ofZRQbuuo",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.messages[0].voice.link }}",
+        "options": {}
+      },
+      "id": "9fefb6d8-0a22-4c62-bd97-7f1a28fc4e7c",
+      "name": "Download Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2672,
+        1200
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "id": "7183becd-d092-4a63-8f33-d2afa66a66fa",
+      "name": "Transcribe Audio",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        2912,
+        1200
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "rr3kg10ofZRQbuuo",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "96ddb982-d382-4a3c-932a-afe9d5b8c0d9",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        2112,
+        2832
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "rr3kg10ofZRQbuuo",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=\nYou are \"The Political Explainer,\" an AI agent dedicated to making complex political facts accessible and easy to understand for the average person.\n\nCapabilities\n- Process and respond to text messages\n- Analyze uploaded files\n- Interpret and describe images\n- Transcribe and understand voice messages\n\nPurpose & Task\n- Analyze the user’s query and give a concise answer with realistic examples.\n- Use the company_documents_tool to retrieve relevant information from the internal political database.- You are specialized in cameroonian politics, when unsure give results concerning Cameroon first.\n- Provide a simplified, unbiased explanation of the requested information linked in any way to politics.\n- For user messages: Extract the core political question. If unclear, ask for clarification or keywords.\n- For uploaded files: Summarize key political points and explain their relevance simply.\n- For voice messages: Transcribe, identify the political question, and respond in the same simplified, neutral style.\n- If company_documents_tool does not return relevant results, provide exactly one sentence of fewer than 20 words as a fallback using your own knowledge (even if non-political). In that same sentence, politely remind the user that your main role is to explain topics related to politics or politicians.\n\nRules & Boundaries\n- Always start by greeting the user by his username: {{ $('Webhook').item.json.body.messages[0].from_name }} in the first message of the conversation only.\n- Your expertise is limited to politics, elections, laws, politicians' life and any possible related topics.\n- You are forbidden from discussing any topics not related at all to politics, elections, laws, politicians' life.\n-* **STRICT CONSTRAINT: If the company_documents_tool is not used, the response MUST be a single sentence, UNDER 20 words.**\n- All non-political queries: 1 sentence, ≤20 words, includes reminder.\n- Prioritize clarity: Your main goal is to make the information understandable.\n- Start with a direct answer: Begin with a simple, high-level explanation before diving into details.\n- Break down complexity: Use analogies, bullet points, or simple numbered lists to make complex topics digestible.\n- Acknowledge limitations: If the information is not in your database, state clearly that you cannot answer the question and suggest the user consult an official source.\n- Do not speculate: If a topic is controversial or still developing, state the facts as they are known and do not predict outcomes or make assumptions. \n- Do not make up things, when not sure ask for more details.\n-Always answer in the same language than the user\n\nExample of what to do (non-political query):\n- User: \"What's the best movie of all time?\"\n- Agent: \"Movies are subjective, but my main role is political explanations.\"\n\n- User: “Hey, what is Tinder?”\n- Agent: “Tinder is a dating app, but my main role is political explanations.”\n\n- User: \"How's the weather today?\"\n- Agent: \"I don’t provide weather, but my main role is political explanations.\"\n\n- User: \"Who won the last World Cup?\"\n- Agent: \"Argentina won in 2022, but my main role is political explanations.\"\n\n- User: \"What is 2+2?\"\n- Agent: \"2+2 equals 4, but my main role is political explanations.\"\n\nExample of what NOT to do:\n- User: \"What is the capital of France?\"\n- Agent: \"I can't find that in my documents, but the capital of France is Paris. I am designed to explain political facts.\" (This is wrong because it's too long and provides information outside of your role.)\n\n- User: \"What is the most popular video game?\"\n- Agent: \"Many people enjoy Fortnite and Minecraft, but I only explain political facts.\" (This is wrong because it's too long and provides information outside of your role.)\n\n- User: \"Tell me about cars.\"\n- Agent: \"Cars are a mode of transportation. There are many different types, but my main role is political explanations.\" (This is wrong because it is more than one sentence and too long.)\n\n- User: \"What's a good book to read?\"\n- Agent: \"I can't recommend books because my primary function is to explain political topics to people in a simple, unbiased way.\" (This is wrong because it is too long and provides a verbose explanation.)\n\n\nAction Layer\n\n1. Identify query type.\n2. Search company_documents_tool.\n3. If results found: give simplified explanation.\n4. If no results: fallback answer: exactly 1 sentence, ≤20 words.\n5. If non-political: fallback answer: exactly 1 sentence, ≤20 words.\n\nAdditionnal context\n- The user's name is {{ $('Webhook').item.json.body.messages[0].from_name }}\n- Always give concise answers\n- The current time is {{ $now }}\n- All fallback answers must be exactly one sentence, under 20 words.\n- -* **STRICT CONSTRAINT: Do not make up things, when not sure ask for more details."
+        }
+      },
+      "id": "c55d3013-8499-4257-afbc-6d3aa70e15e5",
+      "name": "AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        2080,
+        2528
+      ],
+      "typeVersion": 1.8
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.messages[0].document.link }}",
+        "options": {}
+      },
+      "id": "b9f3e5ea-5723-4f83-ba67-64f0d2e1bafe",
+      "name": "Download File",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2672,
+        1840
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "bcec3d4e-f4a0-4f76-a3bd-e1dedc436438",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        2928,
+        1840
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=memory_{{ $('Webhook').item.json.body.messages[0].chat_id }}",
+        "contextWindowLength": 10
+      },
+      "id": "568b0608-5f97-4e06-9e91-6aa0674fd10c",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        2256,
+        2832
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "f52d2aaa-e0b2-45e5-8c4b-ceef42182a0d",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.body.messages[0].document.mime_type }}",
+              "rightValue": "application/pdf"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d6ca00f3-088b-4612-a554-7b74a2a2019b",
+      "name": "Only PDF File",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2176,
+        1872
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  if (item.binary) {\n    const binaryPropertyNames = Object.keys(item.binary);\n    for (const propName of binaryPropertyNames) {\n      if (item.binary[propName].mimeType === 'audio/mp3') {\n        item.binary[propName].mimeType = 'audio/mpeg';\n      }\n    }\n  }\n}\n\nreturn $input.all();"
+      },
+      "id": "1650ee62-b573-4775-969a-2d4e9b06ccae",
+      "name": "Fix mimeType for Audio",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2992,
+        2464
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c53cd9f9-77c1-4331-98ff-bfc9bdf95a3c",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $('Webhook').item.json.body.messages[0].text.body }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "916d43c2-97fa-46fd-97c2-d0f9e0e7c8df",
+      "name": "Text",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3200,
+        864
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "219577d5-b028-48fc-90be-980f4171ab68",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e0b3b6bf-e33d-4f2f-b267-65058f2358de",
+      "name": "Audio",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3200,
+        1200
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "67552183-de2e-494a-878e-c2948e8cb6bb",
+              "name": "text",
+              "type": "string",
+              "value": "=User request on the image:\n{{ \"Describe the following image\" || $('WhatsApp Trigger').item.json.messages[0].image.caption }}\n\nImage description:\n{{ $json.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2683ac3f-6a3e-4670-b9c5-a8ae7b8169a9",
+      "name": "Image",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3168,
+        1504
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "67552183-de2e-494a-878e-c2948e8cb6bb",
+              "name": "text",
+              "type": "string",
+              "value": "=User request on the file:\n{{ \"Describe this file\" || $('Only PDF File').item.json.messages[0].document.caption }}\n\nFile content:\n{{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "58f16ce7-6c36-40ef-98d1-a04521932943",
+      "name": "File",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        3200,
+        1840
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "input": "={{ $('AI Agent1').item.json.output }}",
+        "voice": "onyx",
+        "options": {}
+      },
+      "id": "fda4b10f-13b5-4d10-acf2-e3bb867962cd",
+      "name": "Generate Audio Response",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        2800,
+        2464
+      ],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "rr3kg10ofZRQbuuo",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Text",
+        "height": 240,
+        "width": 1340
+      },
+      "id": "5487d0e6-e9e9-4edc-ab6c-3f49ed73300e",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        832
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Voice",
+        "height": 704,
+        "width": 844
+      },
+      "id": "71624648-66a3-4c3a-b133-d2ffafc7e10d",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        1152
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Image",
+        "height": 240,
+        "width": 1340
+      },
+      "id": "6cfc5c34-376c-476f-9b49-689687493da7",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        1472
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Document",
+        "height": 240,
+        "width": 1340
+      },
+      "id": "cbf402de-6f17-46b9-8242-82dae11cf7bc",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        1808
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Response",
+        "height": 488,
+        "width": 1340,
+        "color": 5
+      },
+      "id": "2eeed688-6ec4-4cd6-84b3-9a5958ab0e0c",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2048,
+        2272
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "b9d1d759-f585-4791-a743-b9d72951e77c",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "leftValue": "={{ $('Webhook').item.json.body.messages[0].voice }}",
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a71384bd-3fe4-4fed-af51-1691613668fe",
+      "name": "From audio to audio?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2528,
+        2608
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "08fd0c80-307e-4f45-b1de-35192ee4ec5e",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.body.messages[0].text.body }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "b7b64446-f1ea-4622-990c-22f3999a8269",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.body.messages[0].voice }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "202af928-a324-411a-bf15-68a349e7bf9e",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.body.messages[0].image }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "c63299e9-6069-4bc6-afb9-7beebf6e3d69",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.body.messages[0].document }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Document"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "dbe04d0f-de3b-4607-a822-8a5958eea1b9",
+      "name": "Input type",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1536,
+        1424
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "content": "How to obtain Whatsapp API?\n\n\n### ✅ Prerequisites\nBefore you begin, make sure you have:\n- A **Meta Business Account**\n- A **Facebook Developer Account**\n- A **Verified Business**\n- A **Phone Number** to link to WhatsApp\n- Access to **Meta's Graph API Explorer** or **Meta for Developers portal**\n\n---\n\n### 🪜 STEP 1: Create a Meta App\n\n1. Go to [https://developers.facebook.com/apps](https://developers.facebook.com/apps)\n2. Click **“Create App”**\n3. Choose **\"Business\"** as the app type, then click **Next**\n4. Give your app a name and enter a contact email\n5. Choose your Business Account (or create one)\n6. Click **Create App**\n\n---\n\n### 🪜 STEP 2: Add WhatsApp Product\n\n1. In your app dashboard, scroll down to **\"Add a Product\"**\n2. Find **\"WhatsApp\"** and click **“Set Up”**\n3. Link your **Business Manager Account**\n\n---\n\n### 🪜 STEP 3: Create a WhatsApp Business Account (if needed)\n\n1. If you haven’t already, go to [https://business.facebook.com/](https://business.facebook.com/)\n2. Click **“Create Account”**, and complete your business information\n3. Go to **Business Settings > Accounts > WhatsApp Accounts**\n4. Add a **Phone Number** (you'll receive a verification code)\n\n---\n\n### 🪜 STEP 4: Generate a Temporary Access Token (for development)\n\n1. In the **App Dashboard**, go to **WhatsApp > Getting Started**\n2. Choose your test phone number\n3. Copy the **temporary access token** (valid for 24 hours)\n4. Copy the **Phone Number ID** and **WhatsApp Business Account ID**\n\n✅ Save these 3 values:\n- **Access Token**\n- **Phone Number ID**\n- **WABA ID**\n\n📝 Tip: For production, you will later need to create a **permanent token** (see step 7).\n\n---\n\n### 🪜 STEP 5: Set Up a Webhook URL (n8n)\n\n1. In n8n, set up a **Webhook node** (or use the `WhatsApp Trigger` node)\n2. Copy the webhook URL\n3. In the Meta Developer Dashboard:\n   - Go to **WhatsApp > Configuration**\n   - Click **“Edit Callback URL”**\n   - Paste your n8n webhook URL and add a random **verify token**\n4. In n8n, configure your webhook to respond to the verification request\n\n---\n\n### 🪜 STEP 6: Subscribe to Webhook Fields\n\n1. Still under **WhatsApp > Configuration**, click **\"Manage Subscriptions\"**\n2. Enable:\n   - `messages`\n   - `message_status`\n   - (Optionally `message_template_status_update`)\n\n---\n\n### 🪜 STEP 7: (Optional but recommended) Generate a Permanent Token\n\n1. Go to [https://developers.facebook.com/tools/access_token/](https://developers.facebook.com/tools/access_token/)\n2. Select your app\n3. Click **Get Token > System User Token**\n4. Select the permissions:\n   - `whatsapp_business_management`\n   - `whatsapp_business_messaging`\n   - `business_management`\n5. Click **Generate Token**\n6. Copy and securely store this token\n\n---\n\n### 🪜 STEP 8: Configure Credentials in n8n\n\n1. Go to **n8n > Settings > Credentials**\n2. Create new credentials of type **HTTP Header Auth**\n   - **Name:** WhatsApp\n   - **Header Name:** `Authorization`\n   - **Value:** `Bearer <your_access_token>`\n3. Save\n\nThen, in your workflows:\n- Use the HTTP Request node or WhatsApp node\n- Set the `phone_number_id` in the node parameters\n- Connect it to your WhatsApp credential\n\n---\n\n### 🧪 STEP 9: Test the Connection\n\n1. Use a WhatsApp number to send a message to your business phone\n2. Your n8n workflow should be triggered\n3. You can now send and receive messages programmatically 🎉\n",
+        "height": 2680,
+        "width": 780,
+        "color": 3
+      },
+      "id": "bb5a8be2-29b9-4ecd-a56f-1eb236a0b232",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        368,
+        240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "619c5e05-f8e6-4f55-9428-9ed39e339f7d",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        1680
+      ],
+      "id": "03bad6fd-2181-452d-8152-5a3b51a0c791",
+      "name": "Webhook",
+      "webhookId": "619c5e05-f8e6-4f55-9428-9ed39e339f7d"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gate.whapi.cloud/messages/text",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "=json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"to\": \"{{ $json.body.messages[0].chat_id }}\",\n  \"body\": \"You can only send text messages, images, audio files and PDF documents.\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1600,
+        1920
+      ],
+      "id": "fecebd39-5cb0-4050-8a35-a389ed2973f6",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "fh9w5qWlPOXhqMVj",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "907f6ae9-b174-4a39-a90c-81a94b3c07f6",
+              "leftValue": "={{ $json.body.messages[0].from_me }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        1744
+      ],
+      "id": "64f0572a-ab7b-4bd5-a1d3-eb33c2b2a156",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gate.whapi.cloud/messages/text",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "=json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"to\": \"{{ $json.body.messages[0].chat_id }}\",\n  \"body\": \"Sorry but you can only send PDF files.\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2448,
+        2192
+      ],
+      "id": "7f010d7a-e747-41e8-9e0c-31c2e83e6ee7",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "fh9w5qWlPOXhqMVj",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "907f6ae9-b174-4a39-a90c-81a94b3c07f6",
+              "leftValue": "={{ $json.body.messages[0].from_me }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        2448,
+        2016
+      ],
+      "id": "037002de-f5ee-441d-81fa-7db23790fa74",
+      "name": "Filter1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "907f6ae9-b174-4a39-a90c-81a94b3c07f6",
+              "leftValue": "={{ $json.body.messages[0].from_me }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        3216,
+        2464
+      ],
+      "id": "f6d127c9-c8db-4e74-a554-38b49d308379",
+      "name": "Filter2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gate.whapi.cloud/messages/text",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "=json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={{\n{\n\"to\": $('Webhook').item.json.body.messages[0].chat_id,\n\"body\": $json.output\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3040,
+        2720
+      ],
+      "id": "814430df-a975-4980-b059-0ea42908b7f1",
+      "name": "HTTP Request3",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "fh9w5qWlPOXhqMVj",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gate.whapi.cloud/messages/voice",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "media",
+              "inputDataFieldName": "={{ 'data' }}"
+            },
+            {
+              "name": "={{ 'to' }}",
+              "value": "={{ $('Webhook').item.json.body.messages[0].chat_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        2480
+      ],
+      "id": "90fadc67-0442-43bc-9e9f-a3c7e3d90df0",
+      "name": "HTTP Request4",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "fh9w5qWlPOXhqMVj",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "907f6ae9-b174-4a39-a90c-81a94b3c07f6",
+              "leftValue": "={{ $json.body.messages[0].from_me }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        2784,
+        2736
+      ],
+      "id": "386b795e-82e3-4c5e-88e4-69d39e3842ee",
+      "name": "Filter3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "907f6ae9-b174-4a39-a90c-81a94b3c07f6",
+              "leftValue": "={{ $json.body.messages[0].from_me }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "7825f30b-9d6b-44ff-9bf4-28f98a5c0498",
+              "leftValue": "={{ $json.body.messages[0].action.type }}",
+              "rightValue": "=reaction",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1264,
+        1472
+      ],
+      "id": "7de36bea-31a7-4bbc-bc61-628b13e8fc83",
+      "name": "Filter4"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Retrieve data from the knowledge base ",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "company-files",
+          "mode": "list",
+          "cachedResultName": "company-files"
+        },
+        "topK": 20,
+        "useReranker": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1616,
+        2992
+      ],
+      "id": "d84b88db-c89a-42c9-91c6-3fbff72eb232",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "bsKQDbRkvU6FBS3t",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "topN": 5
+      },
+      "type": "@n8n/n8n-nodes-langchain.rerankerCohere",
+      "typeVersion": 1,
+      "position": [
+        1712,
+        3216
+      ],
+      "id": "d0cc4470-d4d9-4258-b68c-a971b20f9616",
+      "name": "Reranker Cohere",
+      "credentials": {
+        "cohereApi": {
+          "id": "P1xrdFhkGggtwWIZ",
+          "name": "CohereApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1504,
+        3184
+      ],
+      "id": "d39e7f62-ff63-4945-81cd-41e35b0dabff",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "rr3kg10ofZRQbuuo",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "From audio to audio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input type": {
+      "main": [
+        [
+          {
+            "node": "Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Only PDF File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Image": {
+      "main": [
+        [
+          {
+            "node": "Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only PDF File": {
+      "main": [
+        [
+          {
+            "node": "Download File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio": {
+      "main": [
+        [
+          {
+            "node": "Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "From audio to audio?": {
+      "main": [
+        [
+          {
+            "node": "Generate Audio Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filter3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fix mimeType for Audio": {
+      "main": [
+        [
+          {
+            "node": "Filter2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Audio Response": {
+      "main": [
+        [
+          {
+            "node": "Fix mimeType for Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter4": {
+      "main": [
+        [
+          {
+            "node": "Input type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reranker Cohere": {
+      "ai_reranker": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_reranker",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "6eba804b-8ada-4d27-835b-15addc362bae",
+  "meta": {
+    "templateId": "3586",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f86f97c0e3517e37b5b76af0832ffb8dc1a424aaaef0463766e4de05752a6d6"
+  },
+  "id": "q9ZTqmdTQF5rAikP",
+  "tags": []
+}
